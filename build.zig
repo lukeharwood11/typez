@@ -3,7 +3,7 @@ const std = @import("std");
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
-    const mod = b.addModule("zapp-env", .{
+    const mod = b.addModule("typez", .{
         .root_source_file = b.path("src/root.zig"),
         .target = target,
     });
@@ -14,7 +14,7 @@ pub fn build(b: *std.Build) void {
             .target = target,
             .optimize = optimize,
             .imports = &.{
-                .{ .name = "zapp-env", .module = mod },
+                .{ .name = "typez", .module = mod },
             },
         }),
     });

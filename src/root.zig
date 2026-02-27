@@ -1,7 +1,9 @@
 const std = @import("std");
+const models = @import("models.zig");
+const env = @import("env.zig");
 
-const scoped_logger = std.log.scoped(.@"zapp-env");
+pub const ParseError = models.ParseError;
+pub const Config = models.Config;
+pub const loadEnv = env.loadEnv;
 
-pub fn printTest(input: []const u8) void {
-    scoped_logger.info("{s}", .{input});
-}
+const scoped_logger = std.log.scoped(.typez);
