@@ -2,6 +2,7 @@ const std = @import("std");
 const models = @import("models.zig");
 const comptime_utils = @import("utils/comptime.zig");
 const parser = @import("parsers/base.zig");
+const logger = @import("logging.zig").scoped_logger;
 
 const Config = models.Config;
 const Result = models.Result;
@@ -19,7 +20,7 @@ pub fn getVarFromMap(T: type, allocator: std.mem.Allocator, env_map: *std.proces
         } else if (@typeInfo(T) == .optional) {
             return null;
         } else {
-            std.log.err("No environment variable for '{s}'", .{key});
+            logger.err("No environment variable for '{s}'", .{key});
             return ParseError.InvalidNullField;
         }
     }
@@ -45,7 +46,7 @@ pub fn loadStructFromEnv(
     var t: T = undefined;
     inline for (@typeInfo(T).@"struct".fields) |field| {
         const default = field.defaultValue();
-        std.log.info("Found default: {any}", .{default});
+        logger.debug("Found default: {any}", .{default});
         switch (@typeInfo(field.type)) {
             .@"struct" => {
                 @field(t, field.name) = try loadStructFromEnv(
@@ -58,7 +59,7 @@ pub fn loadStructFromEnv(
             },
             else => {
                 const key = formatCombine(config, namespace, field.name);
-                std.log.info("Checking key: {s}", .{key});
+                logger.debug("Checking key: {s}", .{key});
                 @field(t, field.name) = try getVarFromMap(field.type, allocator, env_map, key, default);
             },
         }

@@ -5,5 +5,3 @@ const env = @import("env.zig");
 pub const ParseError = models.ParseError;
 pub const Config = models.Config;
 pub const loadEnv = env.loadEnv;
-
-const scoped_logger = std.log.scoped(.typez);

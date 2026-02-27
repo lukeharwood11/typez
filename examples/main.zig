@@ -33,8 +33,10 @@ pub fn main() !void {
     switch (result) {
         .ok => |val| {
             defer val.deinit();
-            std.log.info("{any}", .{
-                val.value,
+            std.log.info("is_enabled: {}, test_float: {d}, string: {s}", .{
+                val.value.sub.is_enabled,
+                val.value.sub.test_float,
+                val.value.sub.string,
             });
         },
         .err => |err| {
