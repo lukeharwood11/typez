@@ -68,7 +68,10 @@ pub fn loadStructFromEnv(
 
 pub fn loadEnv(comptime T: type, allocator: std.mem.Allocator, comptime config: Config) Result(T) {
     var env_map = std.process.getEnvMap(allocator) catch |err| {
-        return .createError("Internal Error", err);
+        return switch (err) {
+            std.process.GetEnvMapError.OutOfMemory => .createError("Out of memory", err),
+            std.process.GetEnvMapError.Unexpected => .createError("Unexpected error reading environment variables", err),
+        };
     };
 
     defer env_map.deinit();
