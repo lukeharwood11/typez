@@ -36,7 +36,7 @@ fn formatCombine(
     return comptime_utils.comptimeStringToUpper(string);
 }
 
-pub fn loadStructFromEnv(
+pub fn loadStructFromEnvMap(
     comptime T: type,
     allocator: std.mem.Allocator,
     env_map: *std.process.EnvMap,
@@ -46,10 +46,9 @@ pub fn loadStructFromEnv(
     var t: T = undefined;
     inline for (@typeInfo(T).@"struct".fields) |field| {
         const default = field.defaultValue();
-        logger.debug("Found default: {any}", .{default});
         switch (@typeInfo(field.type)) {
             .@"struct" => {
-                @field(t, field.name) = try loadStructFromEnv(
+                @field(t, field.name) = try loadStructFromEnvMap(
                     field.type,
                     allocator,
                     env_map,
@@ -70,21 +69,18 @@ pub fn loadStructFromEnv(
 pub fn loadEnv(comptime T: type, allocator: std.mem.Allocator, comptime config: Config) Result(T) {
     var env_map = std.process.getEnvMap(allocator) catch |err| {
         return switch (err) {
-            std.process.GetEnvMapError.OutOfMemory => .createError("Out of memory", err),
-            std.process.GetEnvMapError.Unexpected => .createError("Unexpected error reading environment variables", err),
+            std.process.GetEnvMapError.OutOfMemory => .createError(null, "Out of memory", err),
+            std.process.GetEnvMapError.Unexpected => .createError(null, "Unexpected error reading environment variables", err),
         };
     };
 
     defer env_map.deinit();
     const arena = allocator.create(std.heap.ArenaAllocator) catch |err| {
-        return .createError("Out of memory", err);
+        return .createError(null, "Out of memory", err);
     };
     arena.* = std.heap.ArenaAllocator.init(allocator);
-    const s = loadStructFromEnv(T, arena.allocator(), &env_map, config, "") catch |err| {
-        return .createError("Failed to parse struct", err);
+    const s = loadStructFromEnvMap(T, arena.allocator(), &env_map, config, "") catch |err| {
+        return .createError(arena, "Failed to parse struct", err);
     };
-    return .{ .ok = .{
-        .arena = arena,
-        .value = s,
-    } };
+    return .createValue(arena, s);
 }

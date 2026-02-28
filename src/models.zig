@@ -27,19 +27,37 @@ pub fn Result(comptime T: type) type {
         ok: Value(T),
         err: Error,
 
-        pub fn createValue(arena: *std.heap.ArenaAllocator, value: T) @This() {
+        pub fn getValue(self: @This()) !Value(T) {
+            return switch (self) {
+                .ok => |val| val,
+                .err => |err| err.@"error",
+            };
+        }
+
+        pub fn isOk(self: @This()) ?Value(T) {
+            return switch (self) {
+                .ok => |val| val,
+                else => null,
+            };
+        }
+
+        pub fn createValue(arena: *std.heap.ArenaAllocator, data: T) @This() {
             return .{
                 .ok = .{
                     .arena = arena,
-                    .value = value,
+                    .data = data,
                 },
             };
         }
 
-        pub fn createError(message: []const u8, @"error": anyerror) @This() {
+        pub fn createError(arena: ?*std.heap.ArenaAllocator, message: []const u8, @"error": anyerror) @This() {
             return .{
-                .err = .init(message, @"error"),
+                .err = .init(arena, message, @"error"),
             };
+        }
+
+        pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+            self.deinit(allocator);
         }
     };
 }
@@ -47,11 +65,11 @@ pub fn Result(comptime T: type) type {
 pub fn Value(comptime T: type) type {
     return struct {
         arena: *std.heap.ArenaAllocator,
-        value: T,
+        data: T,
 
-        pub fn deinit(self: @This()) void {
+        pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
             self.arena.deinit();
-            self.arena.child_allocator.destroy(self.arena);
+            allocator.destroy(self.arena);
         }
     };
 }
@@ -59,11 +77,21 @@ pub fn Value(comptime T: type) type {
 pub const Error = struct {
     message: []const u8,
     @"error": anyerror,
+    // can be null if there's no memory allocated
+    arena: ?*std.heap.ArenaAllocator = null,
 
-    pub fn init(message: []const u8, @"error": anyerror) Error {
+    pub fn init(arena: ?*std.heap.ArenaAllocator, message: []const u8, @"error": anyerror) Error {
         return .{
             .message = message,
             .@"error" = @"error",
+            .arena = arena,
         };
+    }
+
+    pub fn deinit(self: Error, allocator: std.mem.Allocator) void {
+        if (self.arena) |arena| {
+            defer allocator.destroy(arena);
+            defer arena.deinit();
+        }
     }
 };

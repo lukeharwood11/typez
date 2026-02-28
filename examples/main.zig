@@ -1,4 +1,3 @@
-const env = @import("zapp-env");
 const std = @import("std");
 const typez = @import("typez");
 
@@ -7,17 +6,10 @@ const OpenAISettings = struct {
     base_url: []const u8 = "https://api.openai.com/api/v1",
 };
 
-const Sub = struct {
-    is_enabled: bool = false,
-    test_float: f32 = 21.0,
-    string: []const u8 = "test",
-};
-
 const Settings = struct {
-    sub: Sub,
+    openai: OpenAISettings,
+    is_enabled: bool,
 };
-
-const MyType = enum { a, b, c };
 
 pub fn main() !void {
     const DebugAllocator = std.heap.DebugAllocator(.{});
@@ -26,23 +18,33 @@ pub fn main() !void {
     const allocator = da.allocator();
     const result = typez.loadEnv(Settings, allocator, .{
         .delimeter = "__",
+        .prefix = "APP",
         // .load_dotenv = false,
-        // .prefix = "APP",
+    });
+    defer result.deinit(allocator);
+    const value = try result.getValue();
+    const settings = value.data;
+    std.log.info("is_enabled: {}, api_key: {s}, base_url: {s}", .{
+        settings.is_enabled,
+        settings.openai.api_key,
+        settings.openai.base_url,
     });
 
-    switch (result) {
-        .ok => |val| {
-            defer val.deinit();
-            std.log.info("is_enabled: {}, test_float: {d}, string: {s}", .{
-                val.value.sub.is_enabled,
-                val.value.sub.test_float,
-                val.value.sub.string,
-            });
-        },
-        .err => |err| {
-            std.log.info("{any}", .{
-                err.message,
-            });
-        },
-    }
+    // switch (result) {
+    //     .ok => |val| {
+    //         defer val.deinit(allocator);
+    //         const settings = val.data;
+    // std.log.info("is_enabled: {}, api_key: {s}, base_url: {s}", .{
+    //     settings.is_enabled,
+    //     settings.openai.api_key,
+    //     settings.openai.base_url,
+    // });
+    //     },
+    //     .err => |err| {
+    //         defer err.deinit(allocator);
+    //         std.log.info("{s}", .{
+    //             err.message,
+    //         });
+    //     },
+    // }
 }

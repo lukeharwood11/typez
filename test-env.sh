@@ -1,3 +1,3 @@
-export SUB__IS_ENABLED=true
-export SUB__TEST_FLOAT=14.2
-export SUB__STRING="My String!"
+export APP__OPENAI__API_KEY=sk-my-api-key
+export APP__OPENAI__BASE_URL=https://example.com/api/v1
+export APP__IS_ENABLED=true
